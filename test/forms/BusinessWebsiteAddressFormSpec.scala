@@ -24,6 +24,10 @@ class BusinessWebsiteAddressFormSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   val businessWebsiteAddressForm: Form[String] = BusinessWebsiteAddressForm.form
   val testWebsiteAddress: String = "https://www.example.com"
+  val longTopLevelDomainWebsiteAddress: String = "https://www.example.example"
+  val maximumTopLevelDomainLength = 63
+  val maximumLengthTopLevelDomainWebsiteAddress: String = s"https://www.example.${"a" * maximumTopLevelDomainLength}"
+  val excessiveLengthTopLevelDomainWebsiteAddress: String = s"https://www.example.${"a" * (maximumTopLevelDomainLength + 1)}"
   val incorrectFormatErrorKey: String = "validation.businessWebsiteAddress.invalid"
   val emptyErrorKey: String = "validation.businessWebsiteAddress.missing"
   val maxLengthErrorKey: String = "validation.businessWebsiteAddress.maxlen"
@@ -33,6 +37,24 @@ class BusinessWebsiteAddressFormSpec extends PlaySpec with GuiceOneAppPerSuite {
       val form = businessWebsiteAddressForm.bind(Map(BusinessWebsiteAddressForm.businessWebsiteAddressKey -> testWebsiteAddress)).value
 
       form mustBe Some(testWebsiteAddress)
+    }
+
+    "validate an address with a top-level domain longer than five characters" in {
+      val form = businessWebsiteAddressForm.bind(Map(BusinessWebsiteAddressForm.businessWebsiteAddressKey -> longTopLevelDomainWebsiteAddress)).value
+
+      form mustBe Some(longTopLevelDomainWebsiteAddress)
+    }
+
+    "validate an address with a 63-character top-level domain" in {
+      val form = businessWebsiteAddressForm.bind(Map(BusinessWebsiteAddressForm.businessWebsiteAddressKey -> maximumLengthTopLevelDomainWebsiteAddress)).value
+
+      form mustBe Some(maximumLengthTopLevelDomainWebsiteAddress)
+    }
+
+    "fail validation for an address with a top-level domain longer than 63 characters" in {
+      val formWithError = businessWebsiteAddressForm.bind(Map(BusinessWebsiteAddressForm.businessWebsiteAddressKey -> excessiveLengthTopLevelDomainWebsiteAddress))
+
+      formWithError.errors must contain(FormError(BusinessWebsiteAddressForm.businessWebsiteAddressKey, incorrectFormatErrorKey))
     }
 
     "validate that the incorrect website address format fails" in {
